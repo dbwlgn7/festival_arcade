@@ -80774,8 +80774,8 @@ let board=new Leaderboard(),race=null;
 const ONLINE_CONFIG = {
   url: 'https://ewnjuuskervxwddnfgin.supabase.co',
   publishableKey: 'sb_publishable_EwXRgPI-Rlvc62OLQr3xeA_74rtfzgj',
-  // Off until the record-submission endpoint has abuse protection and validation.
-  allowUnverifiedSubmissions: false
+  // Experimental: client-submitted times are not independently verifiable.
+  allowUnverifiedSubmissions: true
 };
 const onlineReady = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(ONLINE_CONFIG.url)
   && (ONLINE_CONFIG.publishableKey.startsWith('sb_publishable_') || ONLINE_CONFIG.publishableKey.startsWith('eyJ'));
