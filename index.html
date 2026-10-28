@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d1423">
+  <meta name="description" content="60초 지옥 탈출, 야 밀지 마!, 핵폭탄 배구 — 축제 게임 아케이드">
+  <title>축제 아케이드 | 게임 선택</title>
+  <style>
+    :root{color-scheme:dark;font-family:system-ui,'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:#0d1423;color:#f7f9ff}
+    *{box-sizing:border-box}html{min-height:100%;background:#0d1423}body{margin:0;min-height:100dvh;overflow-x:hidden}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 40% at 20% 10%,#2e4d9a54,transparent),radial-gradient(ellipse 50% 40% at 80% 80%,#853c9c2f,transparent)}
+    .shell{position:relative;max-width:1100px;margin:auto;padding:clamp(24px,5vw,65px) clamp(16px,4vw,40px) 50px}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;border:1px solid #ffffff36;border-radius:30px;padding:8px 13px;color:#c4d5ff;font-size:12px;letter-spacing:2px;font-weight:800}
+    .eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:#a7ff97;box-shadow:0 0 14px #a7ff97}
+    h1{font-size:clamp(45px,8vw,91px);line-height:1.04;letter-spacing:-.065em;margin:23px 0 14px;font-weight:950}
+    h1 span{color:#bff18e}.lead{font-size:clamp(14px,2vw,18px);color:#b9c7df;line-height:1.6;margin:0 0 35px}
+    .games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .game{position:relative;isolation:isolate;display:flex;flex-direction:column;min-height:350px;padding:23px;border-radius:22px;text-decoration:none;color:#fff;border:1px solid #ffffff31;overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s;background:#18273e}
+    .game:before{content:"";position:absolute;inset:0;z-index:-1;opacity:.8;background:radial-gradient(circle at 80% 15%,var(--glow),transparent 58%)}
+    .game:hover,.game:focus-visible{transform:translateY(-5px);border-color:var(--accent);box-shadow:0 16px 30px #0005;outline:none}
+    .tag{align-self:flex-start;padding:6px 10px;background:#0005;border:1px solid #fff4;border-radius:20px;font-size:11px;font-weight:800}
+    .art{height:140px;display:grid;place-items:center;margin:8px 0 5px;position:relative}
+    .art .symbol{font-size:84px;filter:drop-shadow(0 13px 14px #0005);transform:rotate(-7deg);transition:transform .2s}.game:hover .symbol{transform:rotate(0deg) scale(1.08)}
+    .game h2{margin:auto 0 8px;font-size:clamp(23px,2.5vw,32px);letter-spacing:-.04em;line-height:1.18}
+    .game p{margin:0 0 22px;color:#d5dfef;font-size:13px;line-height:1.55;min-height:41px}
+    .play{display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#142136;font-size:15px;font-weight:950;padding:13px 16px;border-radius:11px}
+    .play b{font-size:23px;line-height:1}
+    .race{--accent:#c5f685;--glow:#64aa74aa}.stand{--accent:#7ad7fb;--glow:#387bd7aa}.volley{--accent:#ffaecc;--glow:#cd5685aa}
+    footer{display:flex;justify-content:space-between;gap:16px;margin-top:29px;color:#95a7c3;font-size:12px;line-height:1.5}
+    @media(max-width:760px){.games{grid-template-columns:1fr}.game{min-height:0;padding:17px 20px}.art{height:95px;margin:4px 0}.art .symbol{font-size:66px}.game h2{font-size:27px}.game p{min-height:0;margin-bottom:16px}footer{flex-direction:column;gap:4px}}
+    @media(prefers-reduced-motion:reduce){.game,.art .symbol{transition:none}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="eyebrow">SCHOOL FESTIVAL · ARCADE</div>
+    <h1>오늘은<br><span>게임하는 날!</span></h1>
+    <p class="lead">게임 하나를 골라 바로 도전해 보세요.<br>휴대전화에서는 가로 화면으로 플레이하면 더 편해요.</p>
+    <section class="games" aria-label="게임 선택">
+      <a class="game race" href="./60s-hell-escape-stage3.html"><span class="tag">5인 장애물 레이스</span><div class="art" aria-hidden="true"><span class="symbol">🏃</span></div><h2>60초 지옥 탈출</h2><p>AI 경쟁자 4명과 달리고, 점프하고, 60초 안에 탈출!</p><span class="play">게임 시작 <b aria-hidden="true">↗</b></span></a>
+      <a class="game stand" href="./LAST-STAND-stage3.html"><span class="tag">밀치기 대결</span><div class="art" aria-hidden="true"><span class="symbol">🥊</span></div><h2>야, 밀지 마!</h2><p>밀치고, 막고, 필살기로 승부하는 마지막 생존 대전.</p><span class="play">게임 시작 <b aria-hidden="true">↗</b></span></a>
+      <a class="game volley" href="./NUCLEAR-VOLLEY-stage3.html"><span class="tag">3점 선취 배구</span><div class="art" aria-hidden="true"><span class="symbol">🏐</span></div><h2>핵폭탄 배구</h2><p>공을 받아치고 강력한 스킬로 3점을 먼저 얻으세요.</p><span class="play">게임 시작 <b aria-hidden="true">↗</b></span></a>
+    </section>
+    <footer><span>PC · 모바일 · 태블릿 지원</span><span>즐겁고 공정하게 플레이해 주세요!</span></footer>
+  </main>
+</body>
+</html>
