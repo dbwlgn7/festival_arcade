@@ -80770,6 +80770,47 @@ class AudioEngine {
 
 const $=s=>document.querySelector(s),escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let board=new Leaderboard(),race=null;
+// PUBLIC configuration only. Never paste a secret/service-role key here.
+const ONLINE_CONFIG = {
+  url: 'https://ewnjuuskervxwddnfgin.supabase.co',
+  publishableKey: 'sb_publishable_EwXRgPI-Rlvc62OLQr3xeA_74rtfzgj',
+  // Off until the record-submission endpoint has abuse protection and validation.
+  allowUnverifiedSubmissions: false
+};
+const onlineReady = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(ONLINE_CONFIG.url)
+  && (ONLINE_CONFIG.publishableKey.startsWith('sb_publishable_') || ONLINE_CONFIG.publishableKey.startsWith('eyJ'));
+let onlineTop = null, onlineScope = '', onlineLoadSerial = 0;
+function currentScope(){return board.scope==='speedrun'?'speedrun':'math';}
+function onlineHeaders(){return {'apikey':ONLINE_CONFIG.publishableKey,'Content-Type':'application/json'};}
+async function loadOnlineTop(){
+  const serial=++onlineLoadSerial;
+  const scope=board.scope;
+  onlineTop=null;onlineScope='';renderBoard();
+  if(!onlineReady)return;
+  try{
+    const url=ONLINE_CONFIG.url+'/rest/v1/rpc/get_race_top10';
+    const res=await fetch(url,{method:'POST',headers:onlineHeaders(),body:JSON.stringify({p_course_version:COURSE.version,p_game_mode:currentScope()})});
+    if(!res.ok)throw Error('TOP10 HTTP '+res.status);
+    const rows=await res.json();
+    if(serial!==onlineLoadSerial||scope!==board.scope)return;
+    onlineTop=Array.isArray(rows)?rows.filter(r=>typeof r.nickname==='string'&&Number.isInteger(r.finish_ms)).slice(0,10):[];
+    onlineScope=scope;renderBoard();
+  }catch(err){console.warn('온라인 TOP10 조회 실패, 로컬 기록 사용:',err.message);}
+}
+async function submitOnlineRecord(savedRun){
+  if(!onlineReady||!ONLINE_CONFIG.allowUnverifiedSubmissions)return;
+  if(savedRun.isAI||savedRun.status!=='won'||!Number.isInteger(savedRun.finishMs)||savedRun.finishMs<=0||savedRun.finishMs>=60000)return;
+  if(savedRun.mode==='math'&&savedRun.mathSolved!==2)return;
+  const payload={nickname:cleanNick(savedRun.nick),finish_ms:savedRun.finishMs,game_mode:savedRun.mode==='math'?'math':'speedrun',course_version:COURSE.version};
+  try{
+    const headers=onlineHeaders();
+    // For legacy JWT verification, a legacy anon JWT may be needed. Never use a secret key.
+    if(ONLINE_CONFIG.publishableKey.startsWith('eyJ'))headers.authorization='Bearer '+ONLINE_CONFIG.publishableKey;
+    const res=await fetch(ONLINE_CONFIG.url+'/functions/v1/smart-worker',{method:'POST',headers,body:JSON.stringify(payload)});
+    if(!res.ok)throw Error('submit HTTP '+res.status);
+    await loadOnlineTop();
+  }catch(err){console.warn('온라인 기록 제출 실패, 로컬 기록 유지:',err.message);}
+}
 const view=new Renderer($('#scene')),audio=new AudioEngine(),input=new Input(pause);
 let run=createRun(),state='home',countdown=3,accumulator=0,last=performance.now(),noticeUntil=0,finishHandled=false;
 let prefs={color:0,hat:0};try{prefs={...prefs,...JSON.parse(localStorage.getItem('hell-escape-60-prefs')||'{}')};}catch{}
@@ -80778,9 +80819,9 @@ function preview(){drawPreview($('#preview'),COLORS[Number($('#color').value)]||
 function saveLook(){const color=COLORS[Number($('#color').value)]||COLORS[0],hat=Number($('#hat').value);view.changeLook(color,hat);try{localStorage.setItem('hell-escape-60-prefs',JSON.stringify({color:Number($('#color').value),hat}));}catch{}preview();}
 $('#color').onchange=$('#hat').onchange=saveLook;preview();
 document.querySelectorAll('.track .cp').forEach((el,i)=>el.style.left=`${COURSE.checkpoints[i]/COURSE.finish*100}%`);
-function renderBoard(){const rows=board.top();$('#rank-list').innerHTML=rows.length?rows.map((r,i)=>`<li><b>${i+1}</b><span>${escape(r.name)}</span><strong>${formatTime(r.ms)}</strong></li>`).join(''):'<li class="empty">아직 완주 기록이 없어요. 첫 기록을 남겨 보세요!</li>';const me=board.personal($('#nick').value);$('#personal').textContent=me?`${formatTime(me.ms)} · ${me.rank}위`:'아직 없어요';}
+function renderBoard(){const rows=onlineTop!==null&&onlineScope===board.scope?onlineTop.map(r=>({name:r.nickname,ms:r.finish_ms})):board.top();$('#rank-list').innerHTML=rows.length?rows.map((r,i)=>`<li><b>${i+1}</b><span>${escape(r.name)}</span><strong>${formatTime(r.ms)}</strong></li>`).join(''):'<li class="empty">아직 완주 기록이 없어요. 첫 기록을 남겨 보세요!</li>';const me=board.personal($('#nick').value);$('#personal').textContent=me?`${formatTime(me.ms)} · ${me.rank}위`:'아직 없어요';}
 $('#nick').oninput=renderBoard;renderBoard();
-function selectRanking(){const mode=$('#game-mode').value,level=$('#math-level').value;$('#math-level').disabled=mode!=='math';board=new Leaderboard(globalThis.localStorage,COURSE.version,mode==='math'?'math:'+level:'speedrun');$('#rank-scope').textContent=mode==='math'?`수학 · ${'쉬운 통계'} 기록`:'스피드런 기록';renderBoard();}
+function selectRanking(){const mode=$('#game-mode').value,level=$('#math-level').value;$('#math-level').disabled=mode!=='math';board=new Leaderboard(globalThis.localStorage,COURSE.version,mode==='math'?'math:'+level:'speedrun');$('#rank-scope').textContent=mode==='math'?`수학 · ${'쉬운 통계'} 기록`:'스피드런 기록';loadOnlineTop();}
 $('#game-mode').onchange=$('#math-level').onchange=selectRanking;selectRanking();
 function notice(message,seconds=1.6){$('#notice').textContent=message;$('#notice').classList.remove('hidden');noticeUntil=performance.now()+seconds*1000;}
 function start(){document.body.classList.add('in-race');const nick=cleanNick($('#nick').value);if(!nick){$('#start-error').textContent='닉네임을 입력하면 바로 시작할 수 있어요.';$('#nick').focus();return;}$('#start-error').textContent='';$('#nick').value=nick;race=createRace(nick,{mode:$('#game-mode').value,level:$('#math-level').value,seed:Date.now()});run=race.human;view.setRace(race);$('#race-status').classList.remove('hidden');view.camera.position.set(-8,8.7,0);view.target.set(11,2,0);view.cameraFloor=0;view.controlYaw=0;saveLook();finishHandled=false;countdown=3;accumulator=0;last=performance.now();state='countdown';input.enabled=false;input.reset();$('#home').classList.add('hidden');$('#result').classList.add('hidden');$('#pause-panel').classList.add('hidden');$('#hud').classList.remove('hidden');$('#countdown').classList.remove('hidden');$('#notice').classList.add('hidden');audio.unlock();updateHUD();beginRaceGuide();}
@@ -80791,7 +80832,7 @@ let resumeState='playing';function pause(){if(!['playing','countdown','onboardin
 function resume(){if(state!=='paused')return;state=resumeState;race.paused=false;last=performance.now();accumulator=0;input.enabled=state!=='countdown';$('#pause-panel').classList.add('hidden');audio.unlock();}
 $('#pause').onclick=pause;$('#resume').onclick=resume;
 function updateHUD(){const p=run.player,left=Math.max(0,(COURSE.limitMs-(race?.timeMs??run.timeMs))/1000),progress=Math.max(0,Math.min(100,p.s/COURSE.finish*100)),goal=COURSE.checkpoints[run.checkpoint]||COURSE.finish,hint=routeHint(p.s),f=routeFrame(p.s);$('#timer').textContent=left.toFixed(2);$('#progress-bar').style.width=`${progress}%`;$('#progress-text').textContent=`${Math.floor(progress)}%`;$('#checkpoint').textContent=`${run.checkpoint<2?'체크 '+(run.checkpoint+1):'결승'} · ${Math.max(0,Math.round(goal-p.s))}m`;$('#next').textContent=p.grounded&&p.stumble<=0&&p.vx*f.fx+p.vz*f.fz< -3?'↶ 노란 화살표 방향으로 돌아가세요':`${hint.symbol} ${hint.text}`;document.body.classList.toggle('danger',left<=10);}
-function showResult(success){if(finishHandled)return;finishHandled=true;state='result';input.enabled=false;input.reset();$('#countdown').classList.add('hidden');$('#result').classList.remove('hidden');const before=board.personal(run.nick),best=success&&(!before||run.finishMs<before.ms),personal=success?board.submit(run):before;$('#result-icon').textContent=success?'★':'↻';$('#result-title').textContent=best?'개인 최고 기록!':success?'완주 성공!':'시간 초과!';$('#result-copy').textContent=success?'내 기록 저장 완료! AI의 도착 순서는 아래에서 확인하세요.':'기록은 등록되지 않아요. 바로 다시 도전해 보세요.';$('#result-time').textContent=success?formatTime(run.finishMs):'완주 실패';$('#result-best').textContent=personal?formatTime(personal.ms):'-';$('#result-rank').textContent=personal?`${personal.rank}위`:'-';audio.play(success?'win':'timeout');if(best){audio.play('best');view.events([{type:'best',...run.player}]);}}
+function showResult(success){if(finishHandled)return;finishHandled=true;state='result';input.enabled=false;input.reset();$('#countdown').classList.add('hidden');$('#result').classList.remove('hidden');const before=board.personal(run.nick),best=success&&(!before||run.finishMs<before.ms),personal=success?board.submit(run):before;if(success)void submitOnlineRecord({...run});$('#result-icon').textContent=success?'★':'↻';$('#result-title').textContent=best?'개인 최고 기록!':success?'완주 성공!':'시간 초과!';$('#result-copy').textContent=success?'내 기록 저장 완료! AI의 도착 순서는 아래에서 확인하세요.':'기록은 등록되지 않아요. 바로 다시 도전해 보세요.';$('#result-time').textContent=success?formatTime(run.finishMs):'완주 실패';$('#result-best').textContent=personal?formatTime(personal.ms):'-';$('#result-rank').textContent=personal?`${personal.rank}위`:'-';audio.play(success?'win':'timeout');if(best){audio.play('best');view.events([{type:'best',...run.player}]);}}
 function handleEvents(){view.events(race.events);for(const e of race.events){if(e.type!=='win')audio.play(e.type,e.kind);if(e.type==='hit')notice(`${e.cause}! 방향키로 균형을 잡아요`,.7);if(e.type==='overtake')notice(e.place+'위로 추월!',.8);if(e.type==='near')notice('아슬아슬! 멋지게 피했어요',.65);if(e.type==='fail')notice('체크포인트로 복귀!',.8);if(e.type==='checkpoint')notice(`체크포인트 ${e.index} 통과!`,1.3);if(e.type==='pad')notice('점프 패드!',.75);if(e.type==='respawn')notice('다시 달려요!',.6);if(e.type==='win')showResult(true);if(e.type==='timeout')showResult(false);}}
 function renderRaceResults(){if(!race)return;$('#race-status').textContent=`${race.place} / 5위 · ${standings(race)[0].name} 선두`;$('#race-finish').innerHTML=standings(race).map((row,i)=>`<li><b>${i+1}</b> ${escape(row.name)}${row.id==='human'?' (나)':''}<strong>${row.run.status==='won'?formatTime(row.run.finishMs):row.run.status==='timeout'?'시간 초과':Math.floor(row.run.player.s/COURSE.finish*100)+'% · 달리는 중'}</strong></li>`).join('');}
 function openQuestion(){if(!race?.question||state==='question')return;state='question';input.enabled=false;input.reset();$('#math-panel').classList.remove('hidden');const q=race.question;$('#math-title').textContent=`체크포인트 ${q.checkpoint} · 수학 도전`;$('#math-question').textContent=q.text;$('#math-picture').textContent=q.picture;$('#math-feedback').textContent='한 번 선택하면 다시 달려요. 정답이면 AI가 0.5초 쉬어요.';$('#math-choices').replaceChildren();q.choices.forEach((choice,index)=>{const button=document.createElement('button');button.className='secondary';button.textContent=choice;button.onclick=()=>{const result=answerRace(race,q.id,index);if(!result.accepted)return;$('#math-feedback').textContent=(result.correct?'정답! ':'오답 · 보상 없음. ')+result.explanation;$('#math-panel').classList.add('hidden');if(result.correct){audio.play('checkpoint');view.events([{type:'checkpoint',...run.player}]);}notice(result.correct?'정답! AI 4명 0.5초 기절!':('오답 · '+result.explanation),2);if(result.correct)audio.play('hit');input.reset();input.enabled=true;state='playing';accumulator=0;last=performance.now();};$('#math-choices').append(button);});}
